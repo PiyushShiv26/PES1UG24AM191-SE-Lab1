@@ -22,6 +22,7 @@ BRICK_WIDTH = 68
 BRICK_HEIGHT = 22
 BRICK_GAP = 6
 BRICK_TOP_MARGIN = 50
+UNBREAKABLE_POSITIONS = {(2, 2), (2, 5)}
 
 
 class GameEngine:
@@ -43,7 +44,25 @@ class GameEngine:
             for col in range(BRICK_COLS):
                 x = start_x + col * (BRICK_WIDTH + BRICK_GAP)
                 y = BRICK_TOP_MARGIN + row * (BRICK_HEIGHT + BRICK_GAP)
-                bricks.append(Brick(x, y, BRICK_WIDTH, BRICK_HEIGHT))
+                if row == 0:
+                    brick_type = Brick.STRONG
+                    hits_remaining = 3
+                elif (row, col) in UNBREAKABLE_POSITIONS:
+                    brick_type = Brick.UNBREAKABLE
+                    hits_remaining = 1
+                else:
+                    brick_type = Brick.NORMAL
+                    hits_remaining = 1
+                bricks.append(
+                    Brick(
+                        x,
+                        y,
+                        BRICK_WIDTH,
+                        BRICK_HEIGHT,
+                        hits_remaining=hits_remaining,
+                        brick_type=brick_type,
+                    )
+                )
         return bricks
 
     def _reset_ball(self):
@@ -76,8 +95,7 @@ class GameEngine:
 
         for brick in self.bricks:
             if handle_ball_brick_collision(self.ball, brick):
-                brick.hits_remaining -= 1
-                if brick.hits_remaining <= 0:
+                if brick.register_hit():
                     self.bricks.remove(brick)
                 break
 
