@@ -21,8 +21,9 @@ BRICK_COLS = 8
 BRICK_WIDTH = 68
 BRICK_HEIGHT = 22
 BRICK_GAP = 6
-BRICK_TOP_MARGIN = 50
+BRICK_TOP_MARGIN = 80
 UNBREAKABLE_POSITIONS = {(2, 2), (2, 5)}
+BASE_BRICK_POINTS = 100
 
 
 class GameEngine:
@@ -35,6 +36,8 @@ class GameEngine:
         self.bricks = self._build_bricks()
         self.lives = 3
         self.game_over = False
+        self.score = 0
+        self.combo_multiplier = 1
 
     def _build_bricks(self):
         bricks = []
@@ -97,10 +100,13 @@ class GameEngine:
             if handle_ball_brick_collision(self.ball, brick):
                 if brick.register_hit():
                     self.bricks.remove(brick)
+                    self.score += BASE_BRICK_POINTS * self.combo_multiplier
+                    self.combo_multiplier += 1
                 break
 
         if self.ball.is_below(HEIGHT):
             self.lives -= 1
+            self.combo_multiplier = 1
             if self.lives == 0:
                 self.game_over = True
             else:
@@ -109,9 +115,27 @@ class GameEngine:
     def draw(self, surface, font):
         from game import renderer
         renderer.draw_scene(surface, self.paddle, self.ball, self.bricks)
-        renderer.draw_text(surface, font, f"Bricks left: {len(self.bricks)}", (10, 10))
+        hud_padding = 10
+        hud_row_y = hud_padding + font.get_height() + 4
+        renderer.draw_text(
+            surface,
+            font,
+            f"Bricks left: {len(self.bricks)}",
+            (hud_padding, hud_padding),
+        )
+        renderer.draw_text(
+            surface,
+            font,
+            f"Score: {self.score}",
+            (hud_padding, hud_row_y),
+        )
         lives_text = font.render(f"Lives: {self.lives}", True, renderer.COLOR_TEXT)
-        lives_x = surface.get_width() - lives_text.get_width() - 10
-        surface.blit(lives_text, (lives_x, 10))
+        lives_x = surface.get_width() - lives_text.get_width() - hud_padding
+        surface.blit(lives_text, (lives_x, hud_padding))
+        combo_text = font.render(
+            f"Combo: {self.combo_multiplier}x", True, renderer.COLOR_TEXT
+        )
+        combo_x = surface.get_width() - combo_text.get_width() - hud_padding
+        surface.blit(combo_text, (combo_x, hud_row_y))
         if self.game_over:
             renderer.draw_banner(surface, font, "GAME OVER - Press R to restart")
